@@ -226,6 +226,9 @@ namespace $ {
 
 		const headers = headers_common()
 
+		if( !uri ) uri = '_type(name)'
+		const full = { ... $bog_harp_meta( data, { rate_max } ), ... data }
+
 		const fail = ( status: number, code: string, message: string ): $bog_harp_serve_result => ({
 			status,
 			mime: 'application/json',
@@ -246,7 +249,7 @@ namespace $ {
 
 		let slice: $bog_harp_reply_slice
 		try {
-			slice = $bog_harp_reply( ast, data )
+			slice = $bog_harp_reply( ast, full )
 		} catch( error: any ) {
 			if( $mol_fail_catch( error ) ) {
 				if( /^HARP: unknown type/.test( error.message ) ) return fail( 400, 'invalid', error.message )
@@ -290,6 +293,29 @@ namespace $ {
 
 			let state = this.data()
 
+			const respond = ( uri: string, accept = '' )=>
+				$bog_harp_serve_response( uri, state, accept, this.rate_max() )
+
+			type $bog_harp_serve_sub = { uri: string, prev: $bog_harp_reply_slice }
+			const clients = new Set< { sock: any, subs: Map< unknown, $bog_harp_serve_sub > } >()
+
+			const notify = ()=> {
+				for( const client of clients ) {
+					for( const [ id, sub ] of client.subs ) {
+
+						const res = respond( sub.uri )
+						if( res.status >= 400 ) continue
+
+						const slice = JSON.parse( res.body )
+						const delta = $bog_harp_watch_delta( sub.prev, slice )
+						sub.prev = slice
+
+						if( delta ) client.sock.send( JSON.stringify( { id, status: res.status, body: delta } ) )
+
+					}
+				}
+			}
+
 			const send = ( res: any, reply: $bog_harp_serve_result )=> {
 				res.writeHead( reply.status, {
 					'Content-Type': `${ reply.mime }; charset=utf-8`,
@@ -312,7 +338,7 @@ namespace $ {
 				}
 
 				if( req.method === 'GET' ) {
-					return send( res, $bog_harp_serve_response( uri, state, req.headers.accept ?? '', this.rate_max() ) )
+					return send( res, respond( uri, req.headers.accept ?? '' ) )
 				}
 
 				if( req.method === 'PATCH' ) {
@@ -323,6 +349,7 @@ namespace $ {
 						const patched = $bog_harp_serve_patch( uri, text, state )
 						state = patched.data
 						send( res, patched.result )
+						notify()
 					} )
 					return
 				}
@@ -332,6 +359,61 @@ namespace $ {
 					'Access-Control-Allow-Origin': '*',
 				} )
 				res.end( JSON.stringify( { _error: { '': { code: 'invalid', message: `Method ${ req.method } is not supported yet` } } } ) + '\n' )
+
+			} )
+
+			const wss = new ( $node.ws.WebSocketServer )( { server } )
+			wss.on( 'connection', ( sock: any )=> {
+
+				const client = { sock, subs: new Map< unknown, $bog_harp_serve_sub >() }
+				clients.add( client )
+				sock.on( 'close', ()=> clients.delete( client ) )
+
+				const answer = ( envelope: object )=> sock.send( JSON.stringify( envelope ) )
+
+				sock.on( 'message', ( raw: any )=> {
+
+					let envelope: any
+					try {
+						envelope = JSON.parse( String( raw ) )
+					} catch( error ) {
+						return answer( { status: 400, body: { _error: { '': { code: 'invalid', message: 'Envelope is not a valid JSON' } } } } )
+					}
+
+					const { id, method, uri } = envelope
+
+					switch( method ) {
+
+						case 'GET': {
+							const res = respond( String( uri ?? '' ) )
+							return answer( { id, status: res.status, body: JSON.parse( res.body ) } )
+						}
+
+						case 'WATCH': {
+							const res = respond( String( uri ?? '' ) )
+							if( res.status >= 400 ) return answer( { id, status: res.status, body: JSON.parse( res.body ) } )
+							const slice = JSON.parse( res.body )
+							client.subs.set( id, { uri: String( uri ?? '' ), prev: slice } )
+							return answer( { id, status: res.status, body: slice } )
+						}
+
+						case 'FORGET': {
+							client.subs.delete( id )
+							return
+						}
+
+						case 'PATCH': {
+							const patched = $bog_harp_serve_patch( String( uri ?? '' ), JSON.stringify( envelope.body ?? null ), state )
+							state = patched.data
+							answer( { id, status: patched.result.status, body: JSON.parse( patched.result.body ) } )
+							return notify()
+						}
+
+						default: return answer( { id, status: 501, body: { _error: { '': { code: 'invalid', message: `Method "${ method }" is not supported` } } } } )
+
+					}
+
+				} )
 
 			} )
 

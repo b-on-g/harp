@@ -62,6 +62,29 @@ namespace $ {
 
 		},
 
+		'root gives type listing'() {
+
+			const res = $bog_harp_serve_response( '', data )
+
+			$mol_assert_equal( res.status, 200 )
+
+			const slice = JSON.parse( res.body )
+			$mol_assert_like( slice[ '_query' ], { '_type(name)': { reply: [ '_type=user=' ] } } )
+			$mol_assert_like( slice[ '_type' ], { user: { name: 'user' } } )
+
+		},
+
+		'schema is queryable over http'() {
+
+			const res = $bog_harp_serve_response( '_field=user.name=(kind;sort)', data )
+
+			$mol_assert_equal( res.status, 200 )
+			$mol_assert_like( JSON.parse( res.body )[ '_field' ], {
+				'user.name': { kind: 'string', sort: true },
+			} )
+
+		},
+
 		'patch applies and echoes state'() {
 
 			const before: $bog_harp_reply_data = { user: { jin: { name: 'Jin' } } }
