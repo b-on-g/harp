@@ -1,0 +1,200 @@
+{
+	"graph": {
+		"user": {
+			"jin": { "name": "Jin", "age": 30, "friend": [ "user=john=", "user=jane=" ] },
+			"john": { "name": "John", "age": 18, "friend": [ "user=jin=" ] },
+			"jane": { "name": "Jane", "age": 17, "friend": [ "user=jin=", "user=ghost=" ] }
+		},
+		"pullRequest": {
+			"first": { "state": "closed", "updateTime": "2022-07-22", "repository": [ "repo=mol=" ], "author": [ "user=jin=" ] },
+			"second": { "state": "merged", "updateTime": "2022-07-21", "repository": [ "repo=mol=" ], "author": [ "user=jin=" ] },
+			"third": { "state": "open", "updateTime": "2022-07-23", "repository": [ "repo=mol=" ], "author": [ "user=john=" ] }
+		},
+		"repo": {
+			"mol": { "name": "mol", "private": false, "owner": [ "user=jin=" ], "issue": [ "issue=a=", "issue=b=" ] }
+		},
+		"issue": {
+			"a": { "title": "A", "cost": 3 },
+			"b": { "title": "B", "cost": 4 }
+		}
+	},
+	"vectors": [
+		{
+			"name": "fetch by primary key",
+			"kind": "execute",
+			"query": "user=jin=(name)",
+			"reply": {
+				"_query": { "user=jin=(name)": { "reply": [ "user=jin=" ] } },
+				"user": { "jin": { "name": "Jin" } }
+			}
+		},
+		{
+			"name": "filter, order and slice collection",
+			"kind": "execute",
+			"query": "pullRequest(state=closed=merged=;-updateTime;_num=0@2=)",
+			"reply": {
+				"_query": {
+					"pullRequest(-updateTime;_num=0@2=;state=closed=merged=)": {
+						"reply": [ "pullRequest=first=", "pullRequest=second=" ]
+					}
+				},
+				"pullRequest": {
+					"first": { "updateTime": "2022-07-22", "state": "closed" },
+					"second": { "updateTime": "2022-07-21", "state": "merged" }
+				}
+			}
+		},
+		{
+			"name": "half open range",
+			"kind": "execute",
+			"query": "user(age=18@30=;name)",
+			"reply": {
+				"_query": { "user(age=18@30=;name)": { "reply": [ "user=john=" ] } },
+				"user": { "john": { "age": 18, "name": "John" } }
+			}
+		},
+		{
+			"name": "negative filter",
+			"kind": "execute",
+			"query": "user(age!=17=;name)",
+			"reply": {
+				"_query": { "user(age!=17=;name)": { "reply": [ "user=jin=", "user=john=" ] } },
+				"user": {
+					"jin": { "age": 30, "name": "Jin" },
+					"john": { "age": 18, "name": "John" }
+				}
+			}
+		},
+		{
+			"name": "boolean filter",
+			"kind": "execute",
+			"query": "repo(name;private=false=)",
+			"reply": {
+				"_query": { "repo(name;private=false=)": { "reply": [ "repo=mol=" ] } },
+				"repo": { "mol": { "name": "mol", "private": false } }
+			}
+		},
+		{
+			"name": "deep fetch is normalized",
+			"kind": "execute",
+			"query": "user=jin=(friend(name);name)",
+			"reply": {
+				"_query": { "user=jin=(friend(name);name)": { "reply": [ "user=jin=" ] } },
+				"user": {
+					"jin": { "friend": [ "user=john=", "user=jane=" ], "name": "Jin" },
+					"john": { "name": "John" },
+					"jane": { "name": "Jane" }
+				}
+			}
+		},
+		{
+			"name": "link list refine",
+			"kind": "execute",
+			"query": "user=jin=(friend(+age;name;_num=@1=))",
+			"reply": {
+				"_query": { "user=jin=(friend(+age;_num=@1=;name))": { "reply": [ "user=jin=" ] } },
+				"user": {
+					"jin": { "friend": [ "user=jane=" ] },
+					"jane": { "age": 17, "name": "Jane" }
+				}
+			}
+		},
+		{
+			"name": "union of fields across fetches",
+			"kind": "execute",
+			"query": "user=jin=(friend(name));pullRequest(state=closed=;author(name))",
+			"reply": {
+				"_query": {
+					"user=jin=(friend(name))": { "reply": [ "user=jin=" ] },
+					"pullRequest(author(name);state=closed=)": { "reply": [ "pullRequest=first=" ] }
+				},
+				"user": {
+					"jin": { "friend": [ "user=john=", "user=jane=" ], "name": "Jin" },
+					"john": { "name": "John" },
+					"jane": { "name": "Jane" }
+				},
+				"pullRequest": {
+					"first": { "author": [ "user=jin=" ], "state": "closed" }
+				}
+			}
+		},
+		{
+			"name": "dangling link",
+			"kind": "execute",
+			"query": "user=jane=(friend(name))",
+			"reply": {
+				"_query": { "user=jane=(friend(name))": { "reply": [ "user=jane=" ] } },
+				"user": {
+					"jane": { "friend": [ "user=jin=", "user=ghost=" ] },
+					"jin": { "name": "Jin" },
+					"ghost": { "_error": { "": { "code": "absent" } } }
+				}
+			}
+		},
+		{
+			"name": "missing entity by primary key",
+			"kind": "execute",
+			"query": "user=ghost=(name)",
+			"reply": {
+				"_query": { "user=ghost=(name)": { "reply": [] } },
+				"user": { "ghost": { "_error": { "": { "code": "absent" } } } }
+			}
+		},
+		{
+			"name": "missing field",
+			"kind": "execute",
+			"query": "user=jin=(phone)",
+			"reply": {
+				"_query": { "user=jin=(phone)": { "reply": [ "user=jin=" ] } },
+				"user": { "jin": { "_error": { "phone": { "code": "absent" } } } }
+			}
+		},
+		{
+			"name": "aggregation len and sum",
+			"kind": "execute",
+			"query": "repo=mol=(_len(issue);_sum(issue(cost)))",
+			"reply": {
+				"_query": { "repo=mol=(_len(issue);_sum(issue(cost)))": { "reply": [ "repo=mol=" ] } },
+				"repo": {
+					"mol": {
+						"_len": { "issue": 2 },
+						"_sum": { "issue(cost)": 7 }
+					}
+				}
+			}
+		},
+		{
+			"name": "aggregation min and max",
+			"kind": "execute",
+			"query": "repo=mol=(_max(issue(cost));_min(issue(cost)))",
+			"reply": {
+				"_query": { "repo=mol=(_max(issue(cost));_min(issue(cost)))": { "reply": [ "repo=mol=" ] } },
+				"repo": {
+					"mol": {
+						"_max": { "issue(cost)": 4 },
+						"_min": { "issue(cost)": 3 }
+					}
+				}
+			}
+		},
+		{
+			"name": "canonical query echo",
+			"kind": "execute",
+			"query": "user(name;+age)",
+			"reply": {
+				"_query": { "user(+age;name)": { "reply": [ "user=jane=", "user=john=", "user=jin=" ] } },
+				"user": {
+					"jane": { "age": 17, "name": "Jane" },
+					"john": { "age": 18, "name": "John" },
+					"jin": { "age": 30, "name": "Jin" }
+				}
+			}
+		},
+		{
+			"name": "unknown type",
+			"kind": "execute",
+			"query": "ghost(name)",
+			"error": "invalid"
+		}
+	]
+}

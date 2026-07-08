@@ -1,0 +1,44 @@
+[
+	{
+		"name": "primary key with fetch",
+		"kind": "serialize",
+		"ast": { "user": { "=": [ [ "jin" ] ], "name": {} } },
+		"query": "user=jin=(name)"
+	},
+	{
+		"name": "closed range",
+		"kind": "serialize",
+		"ast": { "age": { "=": [ [ "18", "25" ] ] } },
+		"query": "age=18@25="
+	},
+	{
+		"name": "open range below",
+		"kind": "serialize",
+		"ast": { "weight": { "=": [ [ "", "50" ] ] } },
+		"query": "weight=@50="
+	},
+	{
+		"name": "open range above",
+		"kind": "serialize",
+		"ast": { "height": { "=": [ [ "150", "" ] ] } },
+		"query": "height=150@="
+	},
+	{
+		"name": "order asc",
+		"kind": "serialize",
+		"ast": { "age": { "+": true } },
+		"query": "+age"
+	},
+	{
+		"name": "order desc",
+		"kind": "serialize",
+		"ast": { "name": { "+": false } },
+		"query": "-name"
+	},
+	{
+		"name": "deep fetch",
+		"kind": "serialize",
+		"ast": { "my": { "friend": { "age": {} }, "name": {} }, "stat": {} },
+		"query": "my(friend(age);name);stat"
+	}
+]

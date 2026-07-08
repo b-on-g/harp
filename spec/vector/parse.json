@@ -1,0 +1,74 @@
+[
+	{
+		"name": "empty query",
+		"kind": "parse",
+		"query": "",
+		"ast": {}
+	},
+	{
+		"name": "encoded field name",
+		"kind": "parse",
+		"query": "user%3D777",
+		"ast": { "user=777": {} }
+	},
+	{
+		"name": "encoded primary key value",
+		"kind": "parse",
+		"query": "user=jin%2C777!=",
+		"ast": { "user": { "=": [ [ "jin,777!" ] ] } }
+	},
+	{
+		"name": "encoded sub fetch",
+		"kind": "parse",
+		"query": "friend(age%24)",
+		"ast": { "friend": { "age$": {} } }
+	},
+	{
+		"name": "orders",
+		"kind": "parse",
+		"query": "+age;-name",
+		"ast": { "age": { "+": true }, "name": { "+": false } }
+	},
+	{
+		"name": "filters and ranges",
+		"kind": "parse",
+		"query": "sex=female=;age=18@25=;weight=@50=;height=150@=;hobby=paint=singing=",
+		"ast": {
+			"sex": { "=": [ [ "female" ] ] },
+			"age": { "=": [ [ "18", "25" ] ] },
+			"weight": { "=": [ [ "", "50" ] ] },
+			"height": { "=": [ [ "150", "" ] ] },
+			"hobby": { "=": [ [ "paint" ], [ "singing" ] ] }
+		}
+	},
+	{
+		"name": "negative filter",
+		"kind": "parse",
+		"query": "status!=married=",
+		"ast": { "status": { "!=": [ [ "married" ] ] } }
+	},
+	{
+		"name": "deep fetch",
+		"kind": "parse",
+		"query": "my(friend(age);name);stat",
+		"ast": { "my": { "friend": { "age": {} }, "name": {} }, "stat": {} }
+	},
+	{
+		"name": "slicing",
+		"kind": "parse",
+		"query": "friend(_num=0@100=)",
+		"ast": { "friend": { "_num": { "=": [ [ "0", "100" ] ] } } }
+	},
+	{
+		"name": "query string compatibility",
+		"kind": "parse",
+		"query": "user=jin&age=100500",
+		"ast": { "user": { "=": [ [ "jin" ] ] }, "age": { "=": [ [ "100500" ] ] } }
+	},
+	{
+		"name": "path compatibility",
+		"kind": "parse",
+		"query": "users/jin/comments",
+		"ast": { "users": {}, "jin": {}, "comments": {} }
+	}
+]

@@ -1,0 +1,20 @@
+[
+	{
+		"name": "ordered fields first",
+		"kind": "canon",
+		"query": "user(name;+age)",
+		"canonical": "user(+age;name)"
+	},
+	{
+		"name": "rest fields by codepoint",
+		"kind": "canon",
+		"query": "pullRequest(state=closed=merged=;-updateTime;_num=0@2=)",
+		"canonical": "pullRequest(-updateTime;_num=0@2=;state=closed=merged=)"
+	},
+	{
+		"name": "nested canonicalization",
+		"kind": "canon",
+		"query": "user=jin=(friend(name;+age;_num=@1=))",
+		"canonical": "user=jin=(friend(+age;_num=@1=;name))"
+	}
+]
