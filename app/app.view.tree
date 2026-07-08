@@ -1,0 +1,23 @@
+$bog_harp_app $hyoo_harp_app
+	title \HARP Explorer
+	tools /
+		<= Source $mol_link_source
+			uri \https://github.com/b-on-g/harp
+		<= Lights $mol_lights_toggle
+	body /
+		<= Content $mol_list rows /
+			<= Endpoint $mol_string
+				hint \http://localhost:9181
+				value? <=> endpoint? \http://localhost:9181
+			<= Uri $mol_textarea
+				hint \harp;query
+				value? <=> uri? \user=jin=(name;friend(name))
+			<= Rate
+			<= Links $mol_row
+				sub <= link_rows /
+			<= Result $mol_text
+				text <= result_text \
+			<= Json
+	Link_row* $mol_button_minor
+		title <= link_title* \
+		click? <=> link_click*? null

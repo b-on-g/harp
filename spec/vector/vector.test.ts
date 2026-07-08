@@ -21,6 +21,19 @@ namespace $ {
 		return JSON.parse( $mol_file.relative( `bog/harp/spec/vector/${ kind }.json` ).text() )
 	}
 
+	function scrub( value: any ): any {
+		if( Array.isArray( value ) ) return value.map( scrub )
+		if( value && typeof value === 'object' ) {
+			const res = {} as any
+			for( const key of Object.keys( value ) ) {
+				if( key === 'message' && 'code' in value ) continue
+				res[ key ] = scrub( value[ key ] )
+			}
+			return res
+		}
+		return value
+	}
+
 	$mol_test({
 
 		'parse vectors'() {
@@ -43,6 +56,27 @@ namespace $ {
 					vec.canonical,
 				)
 			}
+		},
+
+		'patch vectors'() {
+
+			for( const vec of load( 'patch' ) ) {
+
+				const res = $bog_harp_patch( vec.body, vec.state )
+
+				if( vec.errors ) {
+					if( !res.failed ) $mol_fail( new Error( `HARP vector "${ vec.name }" expected to fail` ) )
+					check( `${ vec.name } / errors`, scrub( res.slice ), scrub( vec.errors ) )
+					check( `${ vec.name } / state untouched`, res.data, vec.state )
+					continue
+				}
+
+				if( res.failed ) $mol_fail( new Error( `HARP vector "${ vec.name }" expected to apply` ) )
+				check( `${ vec.name } / state`, res.data, vec.state2 )
+				check( `${ vec.name } / reply`, res.slice, vec.reply )
+
+			}
+
 		},
 
 		'execute vectors'() {

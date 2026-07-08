@@ -1,0 +1,87 @@
+[
+	{
+		"name": "create entity with client id",
+		"kind": "patch",
+		"state": {},
+		"body": { "user": { "jin": { "name": "Jin" } } },
+		"state2": { "user": { "jin": { "name": "Jin", "_etag": "1" } } },
+		"reply": { "user": { "jin": { "name": "Jin", "_etag": "1" } } }
+	},
+	{
+		"name": "field level merge bumps etag",
+		"kind": "patch",
+		"state": { "user": { "jin": { "name": "Jin", "age": 30, "_etag": "1" } } },
+		"body": { "user": { "jin": { "age": 31 } } },
+		"state2": { "user": { "jin": { "name": "Jin", "age": 31, "_etag": "2" } } },
+		"reply": { "user": { "jin": { "age": 31, "_etag": "2" } } }
+	},
+	{
+		"name": "null clears field",
+		"kind": "patch",
+		"state": { "user": { "jin": { "name": "Jin", "age": 30, "_etag": "1" } } },
+		"body": { "user": { "jin": { "age": null } } },
+		"state2": { "user": { "jin": { "name": "Jin", "_etag": "2" } } },
+		"reply": { "user": { "jin": { "age": null, "_etag": "2" } } }
+	},
+	{
+		"name": "link list replaced whole",
+		"kind": "patch",
+		"state": { "user": { "jin": { "friend": [ "user=a=", "user=b=" ], "_etag": "3" } } },
+		"body": { "user": { "jin": { "friend": [ "user=c=" ] } } },
+		"state2": { "user": { "jin": { "friend": [ "user=c=" ], "_etag": "4" } } },
+		"reply": { "user": { "jin": { "friend": [ "user=c=" ], "_etag": "4" } } }
+	},
+	{
+		"name": "etag precondition passes",
+		"kind": "patch",
+		"state": { "user": { "jin": { "name": "Jin", "_etag": "7" } } },
+		"body": { "user": { "jin": { "_etag": "7", "name": "Dima" } } },
+		"state2": { "user": { "jin": { "name": "Dima", "_etag": "8" } } },
+		"reply": { "user": { "jin": { "name": "Dima", "_etag": "8" } } }
+	},
+	{
+		"name": "etag conflict aborts whole transaction",
+		"kind": "patch",
+		"state": {
+			"user": {
+				"jin": { "name": "Jin", "_etag": "2" },
+				"john": { "name": "John", "_etag": "1" }
+			}
+		},
+		"body": {
+			"user": {
+				"jin": { "_etag": "1", "name": "Hacked" },
+				"john": { "name": "Johnny" }
+			}
+		},
+		"errors": { "user": { "jin": { "_error": { "_etag": { "code": "conflict" } } } } }
+	},
+	{
+		"name": "etag on missing entity is conflict",
+		"kind": "patch",
+		"state": {},
+		"body": { "user": { "jin": { "_etag": "1", "name": "Jin" } } },
+		"errors": { "user": { "jin": { "_error": { "_etag": { "code": "conflict" } } } } }
+	},
+	{
+		"name": "reserved field is invalid",
+		"kind": "patch",
+		"state": {},
+		"body": { "user": { "jin": { "_secret": 1 } } },
+		"errors": { "user": { "jin": { "_error": { "_secret": { "code": "invalid" } } } } }
+	},
+	{
+		"name": "reserved type is invalid",
+		"kind": "patch",
+		"state": {},
+		"body": { "_type": { "user": { "name": "X" } } },
+		"errors": { "_type": { "user": { "_error": { "": { "code": "invalid" } } } } }
+	},
+	{
+		"name": "broken link list is invalid",
+		"kind": "patch",
+		"state": {},
+		"body": { "user": { "jin": { "friend": [ "oops" ] } } },
+		"errors": { "user": { "jin": { "_error": { "friend": { "code": "invalid" } } } } }
+	}
+]

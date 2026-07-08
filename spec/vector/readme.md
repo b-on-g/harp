@@ -8,12 +8,14 @@ Language-agnostic test vectors backing the normative behaviors of the [HARP spec
 - `serialize.json` — array of `{ name, kind: "serialize", ast, query }`: AST → query string.
 - `canon.json` — array of `{ name, kind: "canon", query, canonical }`: any spelling → canonical form (spec §3.5).
 - `execute.json` — `{ graph, vectors }`: shared data graph plus an array of `{ name, kind: "execute", query, data?, reply }` or `{ ..., error }`. `data` defaults to the file-level `graph`. `error` means the implementation must reject the query (servers map this to HTTP 400).
+- `patch.json` — array of `{ name, kind: "patch", state, body, state2, reply }` for applied writes, or `{ name, kind: "patch", state, body, errors }` for atomic aborts: the implementation must report the listed errors and leave `state` untouched (spec §7.3).
 
 ## Comparison rules
 
 - Object keys are **unordered**: compare structurally, not textually.
 - Arrays are **ordered**: `reply` lists and link lists carry ordering, range lists carry precedence.
 - Numbers, booleans and strings compare strictly (no coercion): `false ≠ "false"`, `7 ≠ "7"`.
+- In error objects (`{ code, message? }`) the `message` text is non-normative: compare `code` only.
 
 ## AST shape
 

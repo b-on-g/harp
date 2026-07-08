@@ -3,6 +3,10 @@ namespace $ {
 	export class $bog_harp_serve_demo extends $bog_harp_serve {
 
 		static data(): $bog_harp_reply_data {
+
+			const sqlite = $node.process.env.HARP_SQLITE
+			if( sqlite ) return $bog_harp_store_sqlite( sqlite )
+
 			return {
 				user: {
 					jin: { name: 'Jin', age: 30, friend: [ 'user=john=', 'user=jane=' ] },

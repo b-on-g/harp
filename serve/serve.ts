@@ -146,6 +146,77 @@ namespace $ {
 		return lines.join( '\n' ) + '\n'
 	}
 
+	function headers_common() {
+		return {
+			'Vary': 'Accept',
+			'Access-Control-Allow-Origin': '*',
+		}
+	}
+
+	export function $bog_harp_serve_patch(
+		uri: string,
+		body_text: string,
+		data: $bog_harp_reply_data,
+	): { result: $bog_harp_serve_result, data: $bog_harp_reply_data } {
+
+		const headers = headers_common()
+
+		const fail = ( status: number, code: string, message: string )=> ({
+			data,
+			result: {
+				status,
+				mime: 'application/json',
+				headers,
+				body: JSON.stringify( { _error: { '': { code, message } } }, null, '\t' ) + '\n',
+			},
+		})
+
+		let query: string
+		try {
+			query = $hyoo_harp_to_string( $bog_harp_reply_canon( $hyoo_harp_from_string( uri ) ) )
+		} catch( error: any ) {
+			if( $mol_fail_catch( error ) ) return fail( 400, 'invalid', error.message )
+			throw error
+		}
+
+		let body: any
+		try {
+			body = JSON.parse( body_text )
+		} catch( error: any ) {
+			if( $mol_fail_catch( error ) ) return fail( 400, 'invalid', `Request body is not a valid JSON: ${ error.message }` )
+			throw error
+		}
+
+		if( !body || typeof body !== 'object' || Array.isArray( body ) ) {
+			return fail( 400, 'invalid', 'Request body must be a normalized slice object' )
+		}
+
+		const res = $bog_harp_patch( body, data )
+
+		const written = [] as string[]
+		if( !res.failed ) for( const [ type, table ] of Object.entries( body as $bog_harp_reply_data ) ) {
+			for( const id of Object.keys( table ) ) {
+				written.push( `${ encodeURIComponent( type ) }=${ encodeURIComponent( id ) }=` )
+			}
+		}
+
+		const slice = {
+			_query: { [ query ]: { reply: written } },
+			... res.slice,
+		}
+
+		return {
+			data: res.data,
+			result: {
+				status: res.failed ? 409 : 200,
+				mime: 'application/json',
+				headers,
+				body: JSON.stringify( slice, null, '\t' ) + '\n',
+			},
+		}
+
+	}
+
 	export function $bog_harp_serve_response(
 		uri: string,
 		data: $bog_harp_reply_data,
@@ -153,7 +224,7 @@ namespace $ {
 		rate_max = 1000,
 	): $bog_harp_serve_result {
 
-		const headers = { 'Vary': 'Accept' }
+		const headers = headers_common()
 
 		const fail = ( status: number, code: string, message: string ): $bog_harp_serve_result => ({
 			status,
@@ -217,21 +288,50 @@ namespace $ {
 
 		static start() {
 
-			const server = $node.http.createServer( ( req: any, res: any )=> {
+			let state = this.data()
 
-				if( req.method !== 'GET' ) {
-					res.writeHead( 501, { 'Content-Type': 'application/json; charset=utf-8' } )
-					return res.end( JSON.stringify( { _error: { '': { code: 'invalid', message: `Method ${ req.method } is not supported yet` } } } ) + '\n' )
-				}
-
-				const uri = String( req.url ?? '/' ).replace( /^\//, '' )
-				const reply = $bog_harp_serve_response( uri, this.data(), req.headers.accept ?? '', this.rate_max() )
-
+			const send = ( res: any, reply: $bog_harp_serve_result )=> {
 				res.writeHead( reply.status, {
 					'Content-Type': `${ reply.mime }; charset=utf-8`,
 					... reply.headers,
 				} )
 				res.end( reply.body )
+			}
+
+			const server = $node.http.createServer( ( req: any, res: any )=> {
+
+				const uri = String( req.url ?? '/' ).replace( /^\//, '' )
+
+				if( req.method === 'OPTIONS' ) {
+					res.writeHead( 204, {
+						'Access-Control-Allow-Origin': '*',
+						'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
+						'Access-Control-Allow-Headers': 'Content-Type, Accept',
+					} )
+					return res.end()
+				}
+
+				if( req.method === 'GET' ) {
+					return send( res, $bog_harp_serve_response( uri, state, req.headers.accept ?? '', this.rate_max() ) )
+				}
+
+				if( req.method === 'PATCH' ) {
+					req.setEncoding( 'utf8' )
+					let text = ''
+					req.on( 'data', ( chunk: string )=> text += chunk )
+					req.on( 'end', ()=> {
+						const patched = $bog_harp_serve_patch( uri, text, state )
+						state = patched.data
+						send( res, patched.result )
+					} )
+					return
+				}
+
+				res.writeHead( 501, {
+					'Content-Type': 'application/json; charset=utf-8',
+					'Access-Control-Allow-Origin': '*',
+				} )
+				res.end( JSON.stringify( { _error: { '': { code: 'invalid', message: `Method ${ req.method } is not supported yet` } } } ) + '\n' )
 
 			} )
 

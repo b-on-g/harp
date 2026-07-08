@@ -62,6 +62,41 @@ namespace $ {
 
 		},
 
+		'patch applies and echoes state'() {
+
+			const before: $bog_harp_reply_data = { user: { jin: { name: 'Jin' } } }
+			const res = $bog_harp_serve_patch( 'user=jin=', JSON.stringify({ user: { jin: { name: 'Dima' } } }), before )
+
+			$mol_assert_equal( res.result.status, 200 )
+			$mol_assert_like( JSON.parse( res.result.body ), {
+				_query: { 'user=jin=': { reply: [ 'user=jin=' ] } },
+				user: { jin: { name: 'Dima', _etag: '1' } },
+			} )
+			$mol_assert_like( res.data, { user: { jin: { name: 'Dima', _etag: '1' } } } )
+			$mol_assert_like( before, { user: { jin: { name: 'Jin' } } } )
+
+		},
+
+		'patch conflict gives 409 and keeps state'() {
+
+			const before: $bog_harp_reply_data = { user: { jin: { name: 'Jin', _etag: '2' } } }
+			const res = $bog_harp_serve_patch( 'user=jin=', JSON.stringify({ user: { jin: { _etag: '1', name: 'Hacked' } } }), before )
+
+			$mol_assert_equal( res.result.status, 409 )
+			$mol_assert_equal( JSON.parse( res.result.body ).user.jin._error._etag.code, 'conflict' )
+			$mol_assert_equal( res.data, before )
+
+		},
+
+		'patch with broken json gives 400'() {
+
+			const res = $bog_harp_serve_patch( 'user=jin=', '{oops', {} )
+
+			$mol_assert_equal( res.result.status, 400 )
+			$mol_assert_equal( JSON.parse( res.result.body )._error[''].code, 'invalid' )
+
+		},
+
 		'xml for browsers'() {
 
 			const res = $bog_harp_serve_response(

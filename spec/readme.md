@@ -343,7 +343,7 @@ Every normative behavior is backed by language-agnostic test vectors (JSON files
 }
 ```
 
-`kind` ∈ `parse` (query string → AST), `serialize` (AST → query string), `canon` (any spelling → canonical form, §3.5), `execute` (query + data graph → reply; `error` instead of `reply` means the query must be rejected), `patch` (state + body → state′ + reply; pending). One JSON file per kind; `execute.json` carries a file-level shared `graph` which vectors may override with their own `data`.
+`kind` ∈ `parse` (query string → AST), `serialize` (AST → query string), `canon` (any spelling → canonical form, §3.5), `execute` (query + data graph → reply; `error` instead of `reply` means the query must be rejected), `patch` (`{ state, body, state2, reply }` for applied writes, `{ state, body, errors }` for atomic aborts — state must stay untouched). One JSON file per kind; `execute.json` carries a file-level shared `graph` which vectors may override with their own `data`. In error objects the `message` text is non-normative — conformance compares `code` only.
 
 Comparison rules: object keys are unordered (compare structurally), arrays are ordered (`reply` lists and link lists carry ordering), scalars compare strictly without coercion. Details and the reference runner: [`vector/readme.md`](./vector/readme.md).
 
