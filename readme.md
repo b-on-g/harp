@@ -9,7 +9,7 @@ Upstream idea & query-language implementation: [$hyoo_harp](https://github.com/h
 - [`spec/`](./spec) — normative protocol specification (draft).
 - [`spec/vector/`](./spec/vector) — language-agnostic conformance test vectors + reference runner.
 - [`reply/`](./reply) — reference reply builder: query + data graph → normalized slice (`$bog_harp_reply`).
-- `serve/` (planned) — reference Node HTTP server with resolver interface and content negotiation.
+- [`serve/`](./serve) — reference Node HTTP server: spec §5 statuses (200/207/400/413), content negotiation (JSON/XML/Tree), runnable demo.
 - `store/` (planned) — turnkey storage adapters (SQLite first).
 - `app/` (planned) — API explorer UI, descendant of `$hyoo_harp_app`.
 - `client/` (planned) — framework-agnostic TS client with normalized cache.
@@ -18,6 +18,6 @@ Upstream idea & query-language implementation: [$hyoo_harp](https://github.com/h
 
 1. Spec draft covering query, reply, HTTP binding, writes, errors, metadata, watch. ✅ (see `spec/`)
 2. Reply builder + conformance vectors. ✅ (`npx mam bog/harp/spec/vector` runs everything)
-3. Node server + SQLite demo dataset.
+3. Node server ✅ (`serve/`, demo: `HARP_SERVE=1 node bog/harp/serve/demo/-/node.js`); SQLite store pending.
 4. Explorer with metadata-driven autocomplete.
 5. TS client, then conformance-validated ports (Go, Python).
