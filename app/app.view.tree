@@ -13,6 +13,8 @@ $bog_harp_app $hyoo_harp_app
 				hint \harp;query
 				value? <=> uri? \user=jin=(name;friend(name))
 			<= Rate
+			<= Hints $mol_row
+				sub <= hint_rows /
 			<= Links $mol_row
 				sub <= link_rows /
 			<= Result $mol_text
@@ -21,3 +23,6 @@ $bog_harp_app $hyoo_harp_app
 	Link_row* $mol_button_minor
 		title <= link_title* \
 		click? <=> link_click*? null
+	Hint_row* $mol_button_minor
+		title <= hint_title* \
+		click? <=> hint_click*? null

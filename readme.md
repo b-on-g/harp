@@ -14,14 +14,15 @@ Upstream idea & query-language implementation: [$hyoo_harp](https://github.com/h
 - [`watch/`](./watch) — subscription deltas per spec §9: normalized slice diff (`$bog_harp_watch_delta`).
 - [`serve/`](./serve) — reference Node server: HTTP + WebSocket, spec §5 statuses, `PATCH`, `WATCH`, metadata at `GET /`, CORS, content negotiation (JSON/XML/Tree), runnable demo.
 - [`store/sqlite/`](./store/sqlite) — turnkey SQLite adapter: tables → types, FK → links, zero npm deps.
-- [`app/`](./app) — API explorer: live queries against any HARP endpoint, HATEOAS navigation by clicking links.
-- `client/` (planned) — framework-agnostic TS client with normalized cache.
+- [`app/`](./app) — API explorer: live queries against any HARP endpoint, HATEOAS navigation by clicking links, metadata-driven field autocomplete.
+- [`client/`](./client) — framework-agnostic TS client with normalized cache: `get` / `patch` / `watch`, zero dependencies.
 
 ## Roadmap
 
 1. Spec draft covering query, reply, HTTP binding, writes, errors, metadata, watch. ✅ (see `spec/`)
 2. Reply builder + conformance vectors. ✅ (`npx mam bog/harp/spec/vector` runs everything)
 3. Node server ✅ + `PATCH` ✅ + SQLite store ✅ (demo: `HARP_SERVE=1 [HARP_SQLITE=db.sqlite] node bog/harp/serve/demo/-/node.js`).
-4. Explorer ✅ (`bog/harp/app`); metadata-driven autocomplete pending.
+4. Explorer ✅ with metadata-driven autocomplete ✅ (`bog/harp/app`).
 5. Metadata discovery ✅ + WATCH over WS ✅.
-6. TS client, then conformance-validated ports (Go, Python).
+6. TS client ✅ (`bog/harp/client`).
+7. Conformance-validated ports (Go, Python) — open for contributions, validate against `spec/vector/`.
