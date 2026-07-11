@@ -16,6 +16,24 @@ Upstream idea & query-language implementation: [$hyoo_harp](https://github.com/h
 - [`store/sqlite/`](./store/sqlite) — turnkey SQLite adapter: tables → types, FK → links, zero npm deps.
 - [`app/`](./app) — API explorer: live queries against any HARP endpoint, HATEOAS navigation by clicking links, metadata-driven field autocomplete.
 - [`client/`](./client) — framework-agnostic TS client with normalized cache: `get` / `patch` / `watch`, zero dependencies.
+- [`bench/`](./bench) — reproducible payload benchmark vs GraphQL and REST.
+
+## Payload benchmark
+
+Same data, same fetch plan, three protocols. Reproducible: `HARP_BENCH=1 node bog/harp/bench/-/node.js` ([methodology](./bench), deliberately generous to competitors — no `__typename` for GraphQL, ideally caching client for REST).
+
+| Scenario | Metric | REST | GraphQL | HARP |
+|----------|--------|------|---------|------|
+| 200 PRs + repos + authors | payload | 34.4 KB | 68.2 KB | **32.4 KB** |
+|  | gzipped | 5.3 KB | **3.0 KB** | 3.4 KB |
+|  | requests | 16 | 1 | 1 |
+|  | entity copies | 215 | 800 | **215** |
+| friends of friends (30 roots) | payload | 33.0 KB | 288.7 KB | **20.6 KB** |
+|  | gzipped | 18.3 KB | 9.6 KB | **2.9 KB** |
+|  | requests | 71 | 1 | 1 |
+|  | entity copies | 100 | 3330 | **100** |
+
+The honest read: on shallow duplication gzip hides most of GraphQL's redundancy (it even edges out HARP on wire bytes there), but the client still receives and parses 800 objects instead of 215. Once duplication grows with depth — the friends-of-friends case — normalization wins on every metric: 14× less raw payload, 3.3× less gzipped, 33× fewer objects to parse and hold in memory.
 
 ## Roadmap
 
